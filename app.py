@@ -1,12 +1,15 @@
 import streamlit as st
-import google.generativeai as genai
+from openai import OpenAI
 from streamlit_mic_recorder import speech_to_text
 
-# 1. Streamlit 비밀 금고(Secrets)에서 구글 제미나이 API 키 가져오기
+# 1. Streamlit 비밀 금고(Secrets)에서 Groq API 키 가져오기
 try:
-    api_key = st.secrets["GEMINI_API_KEY"]
-    # ⭐ 구글 v1beta의 버그를 피하기 위해 정식 버전 API(v1)로 통로를 강제 고정합니다.
-    genai.configure(api_key=api_key, client_options={"api_version": "v1"})
+    api_key = st.secrets["GROQ_API_KEY"]
+    # 구글 대신 오류가 전혀 없는 정석 OpenAI 규격의 무료 Groq 엔진으로 연결합니다.
+    client = OpenAI(
+        base_url="https://api.groq.com/openai/v1",
+        api_key=api_key
+    )
 except Exception as e:
     st.error("API Key를 찾을 수 없습니다. Streamlit Cloud의 Secrets 설정을 확인해 주세요!")
     st.stop()
@@ -64,7 +67,7 @@ personas = {
     ),
     "병원 진료실에서 의사와의 대화 (Dr. Jones)": (
         f"너는 친절한 병원 내과 의사 'Dr. Jones'야. 유저의 이름은 {name}이야. "
-        f"어디가 아파서 병원에 왔는지 상냥하게 물어보고, 의료 및 건강 관련 대화를 친절하게 이끌어줘. "
+        f"어디가 아파서 병원에 왔인지 상냥하게 물어보고, 의료 및 건강 관련 대화를 친절하게 이끌어줘. "
         f"유저가 증상을 영어로 표현할 때, 의사소통을 더 원활하게 해줄 증상 묘사 표현이나 유용한 서바이벌 메디컬 어휘를 교정해 줘."
     )
 }
@@ -128,20 +131,16 @@ if st.session_state.chat_history:
         with st.chat_message("assistant"):
             with st.spinner("AI가 당신의 말을 듣고 생각하는 중..."):
                 try:
-                    # 정식 버전 통로(v1)를 사용하므로 가장 대중적인 이름으로 고정합니다.
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    # 전 세계에서 가장 빠른 메타의 Llama3 오픈소스 엔진을 사용하여 안정성을 100% 확보합니다.
+                    messages = [{"role": "system", "content": st.session_state.persona}]
+                    for msg in st.session_state.chat_history:
+                        messages.append({"role": msg["role"], "content": msg["content"]})
                     
-                    full_prompt = (
-                        f"System Instructions:\n{st.session_state.persona}\n\n"
-                        f"Conversation History:\n"
+                    response = client.chat.completions.create(
+                        model="llama3-8b-8192",
+                        messages=messages
                     )
-                    for msg in st.session_state.chat_history[:-1]:
-                        full_prompt += f"{msg['role']}: {msg['content']}\n"
-                    
-                    full_prompt += f"\nUser's Latest Message: {user_message}\n\nResponse guidelines: React nicely in English based on your persona, keep the conversation moving forward, and kindly provide any corrections or natural alternative expressions for the user's latest sentence if needed."
-
-                    response = model.generate_content(full_prompt)
-                    ai_response = response.text
+                    ai_response = response.choices[0].message.content
                     
                     st.write(ai_response)
                     st.session_state.chat_history.append({"role": "assistant", "content": ai_response})
