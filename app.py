@@ -137,7 +137,7 @@ if st.session_state.chat_history:
                         messages.append({"role": msg["role"], "content": msg["content"]})
                     
                     response = client.chat.completions.create(
-                        model="llama3-8b-instant",
+                        model="llama-3.1-8b-instant",
                         messages=messages
                     )
                     ai_response = response.choices[0].message.content
