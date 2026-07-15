@@ -138,7 +138,7 @@ if st.session_state.chat_history:
             with st.spinner("AI가 당신의 말을 듣고 생각하는 중..."):
                 try:
                     model = genai.GenerativeModel(
-                        model_name="gemini-1.5-flash",
+                        model_name="gemini-2.5-flash",
                         system_instruction=st.session_state.persona
                     )
                     chat = model.start_chat(history=[])
