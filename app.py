@@ -127,8 +127,8 @@ if st.session_state.chat_history:
         with st.chat_message("assistant"):
             with st.spinner("AI가 당신의 말을 듣고 생각하는 중..."):
                 try:
-                    # 구글 공식 최신 표준 경로를 명시하여 가장 안정적인 1.5-flash 모델로 고정합니다.
-                    model = genai.GenerativeModel('models/gemini-1.5-flash')
+                    # ⭐ [가장 안전한 매칭] 정식 버전 주소와 완전히 검증된 gemini-pro 명칭을 결합합니다.
+                    model = genai.GenerativeModel('gemini-pro')
                     
                     full_prompt = (
                         f"System Instructions:\n{st.session_state.persona}\n\n"
