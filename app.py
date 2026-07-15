@@ -127,8 +127,19 @@ if st.session_state.chat_history:
         with st.chat_message("assistant"):
             with st.spinner("AI가 당신의 말을 듣고 생각하는 중..."):
                 try:
-                    # ⭐ 구글 v1beta API가 에러 없이 주소를 무조건 찾을 수 있도록 앞에 'models/' 경로를 완전히 명시합니다.
-                    model = genai.GenerativeModel('models/gemini-1.5-flash')
+                    # ⭐ [핵심 업그레이드] 구글 서버에서 현재 이 API 키로 쓸 수 있는 모델 리스트를 직접 조회합니다.
+                    available_models = []
+                    for m in genai.list_models():
+                        if 'generateContent' in m.supported_generation_methods:
+                            available_models.append(m.name)
+                    
+                    # 쓸 수 있는 모델이 있다면 첫 번째 모델을 자동으로 장착 (텍스트 입력 오류 원천 차단)
+                    if available_models:
+                        # 404가 나지 않는 최적의 작동 모델을 시스템이 스스로 고릅니다.
+                        target_model = available_models[0]
+                        model = genai.GenerativeModel(target_model)
+                    else:
+                        raise Exception("사용 가능한 Gemini 모델을 찾을 수 없습니다.")
                     
                     full_prompt = (
                         f"System Instructions:\n{st.session_state.persona}\n\n"
@@ -139,7 +150,6 @@ if st.session_state.chat_history:
                     
                     full_prompt += f"\nUser's Latest Message: {user_message}\n\nResponse guidelines: React nicely in English based on your persona, keep the conversation moving forward, and kindly provide any corrections or natural alternative expressions for the user's latest sentence if needed."
 
-                    # 가장 안전하고 안정적인 기본 텍스트 생성 방식으로 호출
                     response = model.generate_content(full_prompt)
                     ai_response = response.text
                     
