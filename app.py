@@ -127,10 +127,9 @@ if st.session_state.chat_history:
         with st.chat_message("assistant"):
             with st.spinner("AI가 당신의 말을 듣고 생각하는 중..."):
                 try:
-                    # ⭐ 현재 구글 v1beta API 공식 문서 권장 최신 표준 명칭
-                    model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest")
+                    # ⭐ 구글 v1beta API가 에러 없이 주소를 무조건 찾을 수 있도록 앞에 'models/' 경로를 완전히 명시합니다.
+                    model = genai.GenerativeModel('models/gemini-1.5-flash')
                     
-                    # 프롬프트 구조에 페르소나를 완벽히 주입하는 방식
                     full_prompt = (
                         f"System Instructions:\n{st.session_state.persona}\n\n"
                         f"Conversation History:\n"
@@ -140,7 +139,7 @@ if st.session_state.chat_history:
                     
                     full_prompt += f"\nUser's Latest Message: {user_message}\n\nResponse guidelines: React nicely in English based on your persona, keep the conversation moving forward, and kindly provide any corrections or natural alternative expressions for the user's latest sentence if needed."
 
-                    # 최신 API 호출 표준 문법 사용
+                    # 가장 안전하고 안정적인 기본 텍스트 생성 방식으로 호출
                     response = model.generate_content(full_prompt)
                     ai_response = response.text
                     
