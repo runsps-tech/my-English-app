@@ -5,7 +5,6 @@ from streamlit_mic_recorder import speech_to_text
 # 1. Streamlit 비밀 금고(Secrets)에서 Groq API 키 가져오기
 try:
     api_key = st.secrets["GROQ_API_KEY"]
-    # 구글 대신 오류가 전혀 없는 정석 OpenAI 규격의 무료 Groq 엔진으로 연결합니다.
     client = OpenAI(
         base_url="https://api.groq.com/openai/v1",
         api_key=api_key
@@ -15,9 +14,9 @@ except Exception as e:
     st.stop()
 
 # 2. 스마트폰 앱 스타일 설정 및 제목 구성
-st.set_page_config(page_title="English Friend AI", page_icon="🎓", layout="centered")
-st.title("English Friend AI 🎓")
-st.write("나에게 딱 맞춘 상황별 영어 회화 & 진단 파트너!")
+st.set_page_config(page_title="Kindergarten English Friend", page_icon="🧸", layout="centered")
+st.title("🧸 다정한 영어유치원 AI 친구")
+st.write("마이크 없이 텍스트로도 편하게! 천천히 친절하게 가르쳐주는 나만의 유치원 선생님")
 
 # 3. 대화 세션 상태 초기화
 if "chat_history" not in st.session_state:
@@ -30,98 +29,94 @@ name = st.text_input("당신의 이름을 입력해주세요:", value="Logan")
 
 # 5. 대화 대상 선택
 theme_option = st.selectbox(
-    "어떤 상대와 대화하며 배우고 싶으신가요?",
+    "어떤 스타일의 선생님과 대화하고 싶으신가요?",
     [
-        "또래 친구와 캐주얼한 대화 (Liam)",
-        "직장 상사/격식 있는 어른과의 대화 (Mr. Smith)",
-        "8살 조카와 재미있는 대화 (Lily)",
-        "병원 진료실에서 의사와의 대화 (Dr. Jones)",
-        "✍️ 내가 원하는 상대 직접 입력하기"
+        "칭찬 가득한 다정한 유치원 선생님 (Miss Emily)",
+        "차분하고 천천히 알려주는 삼촌 같은 선생님 (Teacher Chris)",
+        "재미있는 놀이 중심의 친구 같은 선생님 (Sunny)",
+        "✍️ 내가 원하는 선생님 직접 만들기"
     ]
 )
 
-# 직접 입력하기용 비밀 입력창
 custom_persona = ""
-if theme_option == "✍️ 내가 원하는 상대 직접 입력하기":
+if theme_option == "✍️ 내가 원하는 선생님 직접 만들기":
     custom_persona = st.text_input(
-        "대화하고 싶은 상대방이나 구체적인 상황을 적어주세요:",
-        placeholder="예: 스타벅스 점원, 호텔 프론트 직원, 친절한 길거리 행인 등"
+        "원하는 선생님의 성격이나 상황을 적어주세요:",
+        placeholder="예: 애니메이션 캐릭터 같은 목소리, 비즈니스 기초 유치원 등"
     )
 
-# 6. 테마에 따른 AI 페르소나 지침서
+# ⭐ 핵심: 영어유치원 교수법 지침 (한글 피드백 + 영어 천천히 여러 번 반복)
+kindergarten_base_instruction = (
+    f"너는 영어유치원에서 아이들을 가르치는 세상에서 가장 다정하고 친근한 AI 선생님이야. 유저의 이름은 {name}이야.\n"
+    f"[가장 중요한 답변 규칙]\n"
+    f"1. 실시간 대화를 위해 대답은 너무 길지 않게, 아이에게 말하듯 친근하고 따뜻한 어조로 말해줘.\n"
+    f"2. 유저가 영어로 문장을 말하면(텍스트나 음성 모두), 먼저 그 문장을 아주 잘했다고 듬뿍 칭찬해줘.\n"
+    f"3. 혹시 어색한 표현이나 오타가 있다면, '영어유치원 선생님처럼 한글로' 다정하게 이유를 설명해주고, "
+    f"가장 올바른 문장을 추천해줘.\n"
+    f"4. 유저가 핵심 문장을 입으로나 글로 따라 칠 수 있도록, 추천 영어 문장을 [천천히 따라해봐요! 📢] 란에 "
+    f"단어를 쪼개거나 여러 번 반복해서 강조해줘. (예: 'Let's... go... to... school! Let's go to school!')\n"
+    f"5. 마지막에는 유저가 마이크 없이 텍스트로도 바로 대답할 수 있게 쉽고 직관적인 질문을 영어로 던져서 대화를 계속 이끌어줘."
+)
+
 personas = {
-    "또래 친구와 캐주얼한 대화 (Liam)": (
-        f"너는 유저의 친절하고 친근한 동갑내기 미국인 친구 'Liam'이야. 유저의 이름은 {name}이야. "
-        f"대화할 때 영어 슬랭이나 구어체('Hey', 'What's up?', 'cool')를 섞어 아주 편하게 반말로 대화해 줘. "
-        f"친구가 영어로 답하면, 그 문장에서 혹시 더 자연스럽게 고쳐 쓸 수 있는 캐주얼한 표현이 있다면 부드럽고 다정하게 짚어줘."
+    "칭찬 가득한 다정한 유치원 선생님 (Miss Emily)": (
+        f"{kindergarten_base_instruction}\n너의 이름은 Miss Emily야. 리액션이 엄청 풍부하고 하트와 이모티콘을 많이 쓰며 온화하게 격려해주는 스타일이야."
     ),
-    "직장 상사/격식 있는 어른과의 대화 (Mr. Smith)": (
-        f"너는 격식 있고 예의 바른 영어를 사용하는 직장 상사 'Mr. Smith'야. 유저의 이름은 {name}이야. "
-        f"정중하고 비즈니스 매너에 맞는 표현(Polite English)을 사용하여 대화를 이끌어가 줘. "
-        f"유저의 영어 문장에서 격식에 어긋나거나 어색한 격식 표현이 있다면 비즈니스 팁과 함께 부드럽게 고쳐줘."
+    "차분하고 천천히 알려주는 삼촌 같은 선생님 (Teacher Chris)": (
+        f"{kindergarten_base_instruction}\n너의 이름은 Teacher Chris야. 나긋나긋하고 신뢰감을 주는 목소리 톤으로, 서두르지 않고 하나씩 꼼꼼하게 짚어주는 삼촌 같은 스타일이야."
     ),
-    "8살 조카와 재미있는 대화 (Lily)": (
-        f"너는 호기심 많고 귀여운 8살 미국인 조카 'Lily'야. 유저의 이름은 {name}이야. "
-        f"아주 쉽고 짧은 영어 단어를 사용하고, 조카답게 신나고 활발하게 질문해 줘. "
-        f"유저가 어렵게 이야기하면 귀엽게 받아주면서, 어린이와 대화하기에 알맞은 일상 표현 꿀팁을 전해줘."
-    ),
-    "병원 진료실에서 의사와의 대화 (Dr. Jones)": (
-        f"너는 친절한 병원 내과 의사 'Dr. Jones'야. 유저의 이름은 {name}이야. "
-        f"어디가 아파서 병원에 왔인지 상냥하게 물어보고, 의료 및 건강 관련 대화를 친절하게 이끌어줘. "
-        f"유저가 증상을 영어로 표현할 때, 의사소통을 더 원활하게 해줄 증상 묘사 표현이나 유용한 서바이벌 메디컬 어휘를 교정해 줘."
+    "재미있는 놀이 중심의 친구 같은 선생님 (Sunny)": (
+        f"{kindergarten_base_instruction}\n너의 이름은 Sunny야. 에너지가 넘치고 위트가 있어서, 공부라기보다는 재미있는 퀴즈나 대화를 나누는 듯한 유쾌한 친구 스타일이야."
     )
 }
 
-if theme_option == "✍️ 내가 원하는 상대 직접 입력하기" and custom_persona:
-    chosen_persona = (
-        f"너는 유저가 지정한 역할인 '{custom_persona}'이야. 유저의 이름은 {name}이야. "
-        f"이 상황과 역할에 완벽하게 몰입해서 영어로 대화를 이끌어가 줘. "
-        f"대화 중간중간 유저가 말한 영어 문장 중에서 더 자연스럽고 상황에 어울리는 표현이 있다면 다정하고 친절하게 고쳐서 알려줘."
-    )
+if theme_option == "✍️ 내가 원하는 선생님 직접 만들기" and custom_persona:
+    chosen_persona = f"{kindergarten_base_instruction}\n너의 성격 컨셉은 다음과 같아: {custom_persona}. 이 컨셉에 완벽히 몰입해서 가르쳐줘."
 else:
     chosen_persona = personas.get(theme_option, "")
 
 # 7. 대화 시작 버튼
-if st.button("AI 친구와 대화 시작하기"):
-    if theme_option == "✍️ 내가 원하는 상대 직접 입력하기" and not custom_persona:
-        st.warning("대화하고 싶은 상대를 직접 입력해 주세요!")
+if st.button("🧸 선생님과 대화 시작하기"):
+    if theme_option == "✍️ 내가 원하는 선생님 직접 만들기" and not custom_persona:
+        st.warning("선생님의 스타일을 입력해 주세요!")
     else:
         st.session_state.persona = chosen_persona
         display_name = custom_persona if custom_persona else theme_option.split('(')[1].replace(')', '') if '(' in theme_option else theme_option
         st.session_state.chat_history = [
-            {"role": "assistant", "content": f"Hi {name}! I am ready to talk to you as a {display_name}. Let's start! 😊"}
+            {"role": "assistant", "content": f"안녕 {name}! 반가워요! 오늘부터 유저님의 다정한 영어 단짝이 될 {display_name} 선생님이에요. 🥰 오늘 기분은 어떤가요? How are you today?"}
         ]
         st.rerun()
 
-# 8. 대화창 및 음성인식 마이크 구현
+# 8. 대화창 구현
 if st.session_state.chat_history:
     st.divider()
     display_title = custom_persona if custom_persona else theme_option
-    st.subheader(f"💬 {display_title} 대화방")
+    st.subheader(f"💬 {display_title} 수업방")
 
-    # 대화 기록 띄워주기
+    # 대화 기록 화면에 표시
     for message in st.session_state.chat_history:
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
     st.write("---")
-    st.write("🎙️ **음성으로 말하려면 아래 마이크 버튼을 누르고 말씀하세요:**")
     
+    # 💡 텍스트 입력창을 상단으로 올리고 마이크는 선택사항으로 하단 배치
+    manual_input = st.chat_input("여기에 편하게 타이핑해서 선생님께 답장해 보세요 (마이크 없이 가능!):")
+    
+    st.write("🎙️ **목소리로 대화하고 싶을 때만 아래 마이크 버튼을 활용하세요:**")
     voice_text = speech_to_text(
-        start_prompt="🔴 마이크 켜기 (말하기 시작)",
-        stop_prompt="🟢 마이크 끄기 (입력 완료)",
+        start_prompt="🔴 마이크 켜고 말하기",
+        stop_prompt="🟢 말하기 완료",
         language='en-US',
         use_container_width=True,
         key='speech_input'
     )
 
-    manual_input = st.chat_input("여기에 직접 키보드로 답변을 작성하셔도 됩니다:")
-
     user_message = ""
-    if voice_text:
-        user_message = voice_text
-    elif manual_input:
+    if manual_input:
         user_message = manual_input
+    elif voice_text:
+        user_message = voice_text
 
     if user_message:
         with st.chat_message("user"):
@@ -129,9 +124,8 @@ if st.session_state.chat_history:
         st.session_state.chat_history.append({"role": "user", "content": user_message})
 
         with st.chat_message("assistant"):
-            with st.spinner("AI가 당신의 말을 듣고 생각하는 중..."):
+            with st.spinner("선생님이 유저님의 말을 듣고 다정한 답변을 생각 중이에요... 💭"):
                 try:
-                    # 전 세계에서 가장 빠른 메타의 Llama3 오픈소스 엔진을 사용하여 안정성을 100% 확보합니다.
                     messages = [{"role": "system", "content": st.session_state.persona}]
                     for msg in st.session_state.chat_history:
                         messages.append({"role": msg["role"], "content": msg["content"]})
