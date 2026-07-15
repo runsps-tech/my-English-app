@@ -5,7 +5,8 @@ from streamlit_mic_recorder import speech_to_text
 # 1. Streamlit 비밀 금고(Secrets)에서 구글 제미나이 API 키 가져오기
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=api_key)
+    # ⭐ 구글 v1beta의 버그를 피하기 위해 정식 버전 API(v1)로 통로를 강제 고정합니다.
+    genai.configure(api_key=api_key, client_options={"api_version": "v1"})
 except Exception as e:
     st.error("API Key를 찾을 수 없습니다. Streamlit Cloud의 Secrets 설정을 확인해 주세요!")
     st.stop()
@@ -127,8 +128,8 @@ if st.session_state.chat_history:
         with st.chat_message("assistant"):
             with st.spinner("AI가 당신의 말을 듣고 생각하는 중..."):
                 try:
-                    # ⭐ [가장 안전한 매칭] 정식 버전 주소와 완전히 검증된 gemini-pro 명칭을 결합합니다.
-                    model = genai.GenerativeModel('gemini-pro')
+                    # 정식 버전 통로(v1)를 사용하므로 가장 대중적인 이름으로 고정합니다.
+                    model = genai.GenerativeModel('gemini-1.5-flash')
                     
                     full_prompt = (
                         f"System Instructions:\n{st.session_state.persona}\n\n"
